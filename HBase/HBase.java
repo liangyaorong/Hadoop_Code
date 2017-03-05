@@ -50,6 +50,7 @@ public class HBase {
         admin.close();
     }
 
+    
     /**
      * 若关闭了自动写缓冲区(table.setAutoFlush(false, false);)，就要手动强制提交(table.flushCommits();)
      * 不然会有部分提交停留在缓冲区没有写入
