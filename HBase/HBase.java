@@ -1,15 +1,10 @@
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.List;
-
+import java.util.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.yecht.Data;
 
-import javax.ws.rs.core.Response;
 
 
 /**
@@ -22,6 +17,17 @@ public class HBase {
     static{
         conf = HBaseConfiguration.create();
         conf.set("hbase.zookeeper.quorum", "localhost");//要设置好zk的位置，不然在没有添加hbase-site.xml的情况下无法定位
+    }
+
+
+    public static void printResult(Result result) throws IOException{
+        for (Cell cell : result.rawCells()){
+            String rowkey = new String(CellUtil.cloneRow(cell));
+            String family = new String(CellUtil.cloneFamily(cell));
+            String qual = new String(CellUtil.cloneQualifier(cell));
+            String val = new String(CellUtil.cloneValue(cell));
+            System.out.println(rowkey + " " + family + " " + qual + " " + val);
+        }
     }
 
 
@@ -50,7 +56,6 @@ public class HBase {
         admin.close();
     }
 
-    
     /**
      * 若关闭了自动写缓冲区(table.setAutoFlush(false, false);)，就要手动强制提交(table.flushCommits();)
      * 不然会有部分提交停留在缓冲区没有写入
@@ -113,16 +118,27 @@ public class HBase {
         }
         Result[] results = table.get(gets);
         for(Result result : results){
-            for (Cell cell : result.rawCells()){
-                String rowkey = new String(CellUtil.cloneRow(cell));
-                String family = new String(CellUtil.cloneFamily(cell));
-                String qual = new String(CellUtil.cloneQualifier(cell));
-                String val = new String(CellUtil.cloneValue(cell));
-                System.out.println(rowkey + " " + family + " " + qual + " " + val);
-            }
+            printResult(result);
+            System.out.print("\n");
         }
     }
 
+
+    /**
+     * 查找全表某一特定列族与列的行
+     */
+    public static void scan(String tableName, List<String[]> FamilyAndQualList) throws IOException{
+        HTable table = new HTable(conf,tableName);
+        Scan scan = new Scan();
+        for(String[] FamilyAndQual :FamilyAndQualList) {
+            scan.addColumn(Bytes.toBytes(FamilyAndQual[0]), Bytes.toBytes(FamilyAndQual[1]));
+        }
+        ResultScanner scanner = table.getScanner(scan);
+        for(Result result : scanner){
+            printResult(result);
+        }
+
+    }
 
     public static void main(String[] args) throws IOException{
 //        createTable("Twitter", new String[]{"info", "age"});
@@ -138,7 +154,14 @@ public class HBase {
 //        String[] toPutRow = {"2014212910","info","room2","3"};
 //        checkAndPut("Twitter", toCheckRow, toPutRow);
 
-        String[] rowKeys = {"2014212910","2014212911"};
-        get("Twitter",rowKeys);
+//        String[] rowKeys = {"2014212910","2014212911"};
+//        get("Twitter",rowKeys);
+
+        List FNQList = new ArrayList<>();
+        String[] scanFNQ1 = {"info","add"};
+        String[] scanFNQ2 = {"info","room"};
+        FNQList.add(scanFNQ1);
+        FNQList.add(scanFNQ2);
+        scan("Twitter", FNQList);
     }
 }
