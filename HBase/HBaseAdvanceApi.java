@@ -119,7 +119,6 @@ public class HBaseAdvanceApi{
     }
 
     //多计数器
-    //这里为了方便起见，把amount以String的形式和KeyValue放在一起.其实amount是Long形式的
     public static void incMutipleColumnVal(String tableName, String rowKey) throws IOException{
         HTable table = new HTable(conf, tableName);
         Increment increment = new Increment(Bytes.toBytes(rowKey));
